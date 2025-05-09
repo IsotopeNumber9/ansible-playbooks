@@ -1,0 +1,21 @@
+---
+- name: Update Debian 12 LXC containers
+  hosts: all
+  become: true
+  tasks:
+    - name: Update package lists
+      apt:
+        update_cache: yes
+
+    - name: Upgrade packages
+      apt:
+        upgrade: dist
+
+    - name: Check if a reboot is required
+      register: reboot_required
+      stat:
+        path: /var/run/reboot-required
+     
+    - name: Reboot the container if needed
+      reboot:
+      when: reboot_required.stat.exists
