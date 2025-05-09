@@ -1,0 +1,20 @@
+---
+- name: Install Watchtower on LXC Container
+  hosts: tester
+  become: yes
+  tasks:
+    - name: Pull Watchtower Docker image
+      community.docker.docker_image:
+        name: containrrr/watchtower
+        source: pull
+
+    - name: Run Watchtower container
+      community.docker.docker_container:
+        name: watchtower
+        image: containrrr/watchtower
+        state: started
+        restart_policy: always
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        env:
+          WATCHTOWER_POLL_INTERVAL: "3600"  # Check for updates every hour
