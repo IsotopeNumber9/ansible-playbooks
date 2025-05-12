@@ -1,6 +1,6 @@
 ---
 - name: Install CrowdSec on Debian LXC
-  hosts: deall
+  hosts: all
   become: yes
   tasks:
     - name: Update and upgrade packages
