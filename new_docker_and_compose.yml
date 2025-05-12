@@ -5,7 +5,7 @@
   tasks:
     - name: Install GPG
       apt:
-        name: gpg
+        name: gpg-agent
         state: present
       when: ansible_os_family == "Debian"
 
