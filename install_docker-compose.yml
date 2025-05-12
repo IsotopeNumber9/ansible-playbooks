@@ -1,5 +1,5 @@
 - name: Install Docker Compose on Debian 12 Proxmox LXC
-  hosts: tester
+  hosts: all
   remote_user: "{{ ansible_user | default('eljefe') }}"
   become: yes
   tasks:
