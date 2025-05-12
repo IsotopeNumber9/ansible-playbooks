@@ -1,6 +1,6 @@
 ---
 - name: Install Watchtower on LXC Container
-  hosts: tester
+  hosts: all
   become: yes
   tasks:
     - name: Pull Watchtower Docker image
