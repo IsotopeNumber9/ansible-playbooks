@@ -1,6 +1,6 @@
 ---
 - name: Install Docker and Docker Compose
-  hosts: tester
+  hosts: all
   become: yes
   tasks:
     - name: Update package lists
