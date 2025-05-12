@@ -3,6 +3,12 @@
   hosts: all
   become: yes
   tasks:
+    - name: Install GPG
+      apt:
+        name: gpg
+        state: present
+      when: ansible_os_family == "Debian"
+
     - name: Install prerequisites
       apt:
         name: ["ca-certificates", "curl", "gnupg"]
