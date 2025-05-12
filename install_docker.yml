@@ -1,6 +1,6 @@
 ---
 - name: Install Docker on Debian 12 LXC
-  hosts: tester
+  hosts: all
   become: true
   tasks:
 
