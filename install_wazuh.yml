@@ -5,7 +5,7 @@
   vars:
     wazuh_repo_url: "https://packages.wazuh.com/4.x/apt/"
     wazuh_gpg_key_url: "https://packages.wazuh.com/key/GPG-KEY-WAZUH"
-    wazuh_version: "4.7.3"
+    wazuh_version: "4.12.0"
 
   tasks:
     - name: Ensure apt cache is updated
@@ -40,7 +40,7 @@
 
     - name: Install Wazuh Manager
       apt:
-        name: wazuh-manager
+        name: "wazuh-manager={{ wazuh_version }}"
         state: present
 
     - name: Enable and start Wazuh Manager
