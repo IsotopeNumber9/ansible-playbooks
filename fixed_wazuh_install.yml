@@ -1,0 +1,123 @@
+---
+- name: Deploy Wazuh Manager + OpenSearch + Dashboard on Debian 12 LXC with hostname 'wazuh'
+  hosts: wazuh
+  become: yes
+
+  tasks:
+    - name: Set hostname to 'wazuh'
+      hostname:
+        name: wazuh
+
+    - name: Ensure /etc/hosts has hostname mapping
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1\s+'
+        line: '127.0.1.1   wazuh'
+        create: yes
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required base packages
+      apt:
+        name:
+          - curl
+          - gnupg
+          - apt-transport-https
+          - lsb-release
+          - software-properties-common
+        state: present
+
+    # --- Add Wazuh Repo ---
+    - name: Add Wazuh GPG key
+      apt_key:
+        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+        state: present
+
+    - name: Add Wazuh APT repository
+      apt_repository:
+        repo: "deb https://packages.wazuh.com/4.x/apt/ stable main"
+        filename: wazuh
+        state: present
+
+    # --- Add OpenSearch Repo ---
+    - name: Add OpenSearch GPG key
+      apt_key:
+        url: https://artifacts.opensearch.org/publickeys/opensearch.pgp
+        state: present
+
+    - name: Add OpenSearch APT repository
+      apt_repository:
+        repo: "deb https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main"
+        filename: opensearch
+        state: present
+
+    - name: Update apt cache after adding repositories
+      apt:
+        update_cache: yes
+
+    # --- Install and patch OpenSearch ---
+    - name: Install OpenSearch
+      apt:
+        name: opensearch
+        state: present
+
+    - name: Disable OpenSearch demo configuration script
+      file:
+        path: /usr/share/opensearch/plugins/opensearch-security/tools/install_demo_configuration.sh
+        state: absent
+
+    - name: Write minimal OpenSearch config with hostname 'wazuh'
+      copy:
+        dest: /etc/opensearch/opensearch.yml
+        content: |
+          cluster.name: wazuh-cluster
+          node.name: wazuh
+          network.host: 0.0.0.0
+          discovery.seed_hosts: ["127.0.0.1"]
+          cluster.initial_master_nodes: ["wazuh"]
+          plugins.security.disabled: true
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart OpenSearch
+      systemd:
+        name: opensearch
+        enabled: yes
+        state: restarted
+
+    - name: Wait for OpenSearch to respond
+      uri:
+        url: http://localhost:9200
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: opensearch_check
+      retries: 10
+      delay: 10
+      until: opensearch_check.status == 200
+
+    # --- Install and configure Wazuh ---
+    - name: Install Wazuh Manager
+      apt:
+        name: wazuh-manager
+        state: present
+
+    - name: Enable and start Wazuh Manager
+      systemd:
+        name: wazuh-manager
+        enabled: yes
+        state: started
+
+    - name: Install Wazuh Dashboard
+      apt:
+        name: wazuh-dashboard
+        state: present
+
+    - name: Enable and start Wazuh Dashboard
+      systemd:
+        name: wazuh-dashboard
+        enabled: yes
+        state: started
