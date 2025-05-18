@@ -1,6 +1,6 @@
 ---
 - name: Deploy Wazuh Manager + Dashboard on Debian 12 (Single Node)
-  hosts: wazuh_node
+  hosts: wazuh
   become: yes
   vars:
     wazuh_repo_url: "https://packages.wazuh.com/4.x/apt/"
