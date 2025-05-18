@@ -1,6 +1,6 @@
 ---
 - name: Install Wazuh Manager + OpenSearch + Dashboard on Debian 12 LXC
-  hosts: wazuh_node
+  hosts: wazuh
   become: yes
 
   vars:
