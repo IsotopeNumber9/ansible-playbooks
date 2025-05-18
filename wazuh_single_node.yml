@@ -68,29 +68,33 @@
         name: opensearch
         state: present
 
-    - name: Configure OpenSearch to bind to all interfaces
-      lineinfile:
-        path: /etc/opensearch/opensearch.yml
-        regexp: '^network\.host:'
-        line: 'network.host: 0.0.0.0'
-        create: yes
+    - name: Write minimal OpenSearch config (disable security plugin)
+      copy:
+        dest: /etc/opensearch/opensearch.yml
+        content: |
+          cluster.name: wazuh-cluster
+          node.name: wazuh-node
+          network.host: 0.0.0.0
+          discovery.seed_hosts: ["127.0.0.1"]
+          cluster.initial_master_nodes: ["wazuh-node"]
+          plugins.security.disabled: true
 
-    - name: Enable and start OpenSearch
-      systemd:
-        name: opensearch
-        enabled: yes
-        state: started
-
-    - name: Wait for OpenSearch to respond
-      uri:
-        url: http://localhost:9200
-        method: GET
-        return_content: yes
-        status_code: 200
-      register: opensearch_check
-      retries: 10
-      delay: 10
-      until: opensearch_check.status == 200
+      - name: Restart OpenSearch
+        systemd:
+          name: opensearch
+          enabled: yes
+          state: restarted
+      
+          - name: Wait for OpenSearch to respond
+            uri:
+              url: http://localhost:9200
+              method: GET
+              return_content: yes
+              status_code: 200
+            register: opensearch_check
+            retries: 10
+            delay: 10
+            until: opensearch_check.status == 200
 
     ## -- Install and Start Wazuh Dashboard --
 
