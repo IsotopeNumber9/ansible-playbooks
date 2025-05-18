@@ -4,7 +4,7 @@
   become: yes
 
   vars:
-    opensearch_admin_password: "XXXXXXX"  # Set your own secure password here
+    opensearch_admin_password: "abc123"  # Set your own secure password here
 
   tasks:
     - name: Set hostname to 'wazuh'
