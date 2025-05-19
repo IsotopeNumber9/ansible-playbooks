@@ -1,6 +1,6 @@
 ---
 - name: Add Docker repository to Debian 12 LXC
-  hosts: tester
+  hosts: netbox
   become: yes
 
   tasks:
