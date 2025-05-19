@@ -1,6 +1,6 @@
 ---
 - name: Install Docker on Debian 12 LXC
-  hosts: all
+  hosts: netbox
   become: true
   tasks:
 
