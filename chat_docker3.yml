@@ -24,8 +24,7 @@
     - name: Add Docker GPG key using apt-key (legacy workaround)
       ansible.builtin.shell: |
         curl -fsSL {{ docker_gpg_key_url }} | apt-key add -
-      args:
-        warn: false
+      changed_when: false
 
     - name: Add Docker APT repository (without signed-by)
       apt_repository:
