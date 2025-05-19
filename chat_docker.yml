@@ -40,7 +40,10 @@
         repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] {{ docker_apt_repo }} bullseye stable"
         state: present
         filename: docker
-
+    
+    - name: Manually run apt-get update
+      command: apt-get update
+    
     - name: Update apt cache after adding Docker repo
       apt:
         update_cache: yes
