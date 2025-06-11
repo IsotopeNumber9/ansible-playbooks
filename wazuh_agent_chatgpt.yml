@@ -4,58 +4,50 @@
   become: yes
   vars:
     wazuh_manager_ip: "192.168.1.49"
-    wazuh_agent_deb_url: "https://packages.wazuh.com/4.x/apt/"
     wazuh_repo_key: "https://packages.wazuh.com/key/GPG-KEY-WAZUH"
     wazuh_repo_file: "/etc/apt/sources.list.d/wazuh.list"
+    wazuh_repo_url: "https://packages.wazuh.com/4.x/apt/"
     wazuh_agent_package: "wazuh-agent"
 
   tasks:
 
-    - name: Add Wazuh APT repository key
+    - name: Add Wazuh GPG key
       apt_key:
         url: "{{ wazuh_repo_key }}"
         state: present
 
-    - name: Add Wazuh repository
+    - name: Add Wazuh APT repository
       apt_repository:
-        repo: "deb {{ wazuh_agent_deb_url }} stable main"
+        repo: "deb {{ wazuh_repo_url }} stable main"
         filename: "wazuh"
         state: present
 
     - name: Update apt cache
       apt:
         update_cache: yes
-        cache_valid_time: 3600
 
     - name: Install Wazuh agent
       apt:
         name: "{{ wazuh_agent_package }}"
         state: present
 
-    - name: Configure Wazuh manager IP
-      lineinfile:
+    - name: Disable unattended upgrades (Debian default)
+      systemd:
+        name: unattended-upgrades
+        enabled: no
+        state: stopped
+
+    - name: Ensure manager IP is correctly set in ossec.conf
+      xml:
         path: /var/ossec/etc/ossec.conf
-        regexp: '<address>.*</address>'
-        line: "    <address>{{ wazuh_manager_ip }}</address>"
-        insertafter: '<server>'
+        xpath: /ossec_config/client/server/address
+        value: "{{ wazuh_manager_ip }}"
         state: present
-        backup: yes
+        pretty_print: yes
+      notify: restart wazuh agent
 
-    - name: Disable Wazuh agent automatic updates
-      blockinfile:
-        path: /var/ossec/etc/ossec.conf
-        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK: Disable auto-updates -->"
-        insertafter: '<ossec_config>'
-        block: |
-          <wazuh_modules>
-            <module>
-              <name>agent-updater</name>
-              <disabled>yes</disabled>
-            </module>
-          </wazuh_modules>
-
-    - name: Enable and start wazuh-agent service
+  handlers:
+    - name: restart wazuh agent
       systemd:
         name: wazuh-agent
-        enabled: yes
         state: restarted
