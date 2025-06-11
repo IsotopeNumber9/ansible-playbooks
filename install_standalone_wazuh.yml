@@ -1,0 +1,47 @@
+---
+- name: Install Wazuh on Debian 12
+  hosts: wazuh
+  become: yes
+  tasks:
+
+    - name: Update package index
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name: 
+          - curl
+          - gnupg
+          - apt-transport-https
+        state: present
+
+    - name: Add Wazuh repository key
+      apt_key:
+        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+        state: present
+
+    - name: Add Wazuh repository
+      apt_repository:
+        repo: "deb https://packages.wazuh.com/4.x/apt/ stable main"
+        state: present
+        filename: wazuh
+
+    - name: Install Wazuh manager
+      apt:
+        name: wazuh-manager
+        state: present
+
+    - name: Enable and start Wazuh manager service
+      systemd:
+        name: wazuh-manager
+        enabled: yes
+        state: started
+
+    - name: Verify Wazuh installation
+      command: systemctl status wazuh-manager
+      register: wazuh_status
+
+    - name: Display Wazuh status
+      debug:
+        msg: "{{ wazuh_status.stdout_lines }}"
