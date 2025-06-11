@@ -32,12 +32,18 @@
       apt:
         update_cache: yes
 
-    - name: Install Wazuh Agent with environment variable
+    - name: Install Wazuh Agent
       apt:
         name: wazuh-agent
         state: present
-      environment:
-        WAZUH_MANAGER: "192.168.1.49"
+
+    - name: Ensure manager IP is set in ossec.conf
+      xml:
+        path: /var/ossec/etc/ossec.conf
+        xpath: /ossec/client/server/address
+        value: 192.168.1.49
+        state: present
+      notify: Restart wazuh-agent
 
     - name: Enable wazuh-agent service
       systemd:
@@ -57,3 +63,9 @@
     - name: Update APT cache again
       apt:
         update_cache: yes
+
+  handlers:
+    - name: Restart wazuh-agent
+      systemd:
+        name: wazuh-agent
+        state: restarted
