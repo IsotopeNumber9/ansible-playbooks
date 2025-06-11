@@ -1,0 +1,59 @@
+---
+- name: Install and configure Wazuh Agent
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure directory for keyring exists
+      file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download and import Wazuh GPG key
+      shell: |
+        curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | \
+        gpg --no-default-keyring --keyring gnupg-ring:/usr/share/keyrings/wazuh.gpg --import
+      args:
+        creates: /usr/share/keyrings/wazuh.gpg
+
+    - name: Set permissions on Wazuh GPG key
+      file:
+        path: /usr/share/keyrings/wazuh.gpg
+        mode: '0644'
+
+    - name: Add Wazuh APT repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main"
+        filename: wazuh
+        state: present
+
+    - name: Update APT cache
+      apt:
+        update_cache: yes
+
+    - name: Install Wazuh Agent with environment variable
+      apt:
+        name: wazuh-agent
+        state: present
+      environment:
+        WAZUH_MANAGER: "192.168.1.49"
+
+    - name: Enable wazuh-agent service
+      systemd:
+        name: wazuh-agent
+        enabled: yes
+        daemon_reload: yes
+        state: started
+
+    - name: Comment out Wazuh repository line
+      lineinfile:
+        path: /etc/apt/sources.list.d/wazuh.list
+        regexp: '^deb '
+        line: '#deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main'
+        state: present
+        backrefs: yes
+
+    - name: Update APT cache again
+      apt:
+        update_cache: yes
