@@ -1,8 +1,6 @@
 ---
-- name: Install & register Wazuh Agent on Debian-based Linux
-  hosts: all
-  become: true
-
+- hosts: all
+  become: yes
   vars:
     wazuh_manager_ip: "192.168.1.49"
 
@@ -17,13 +15,18 @@
           - lsb-release
         state: present
         update_cache: yes
+        
+    - name: Install python3-lxml (required by xml module)
+      apt:
+        name: python3-lxml
+        state: present
 
     - name: Add Wazuh GPG key
       apt_key:
         url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
         state: present
 
-    - name: Add Wazuh APT repository
+    - name: Add Wazuh APT repo
       apt_repository:
         repo: "deb [arch=amd64] https://packages.wazuh.com/4.x/apt/ stable main"
         filename: wazuh
@@ -35,7 +38,7 @@
         name: wazuh-agent
         state: present
 
-    - name: Wait for wazuh.conf to exist
+    - name: Wait for /var/ossec/etc/ossec.conf to exist
       wait_for:
         path: /var/ossec/etc/ossec.conf
         timeout: 30
@@ -48,7 +51,7 @@
         state: present
       notify: Restart wazuh-agent
 
-    - name: Ensure wazuh-agent is enabled & running
+    - name: Ensure wazuh-agent is enabled & started
       systemd:
         name: wazuh-agent
         enabled: yes
