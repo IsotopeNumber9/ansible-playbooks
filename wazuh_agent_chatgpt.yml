@@ -1,0 +1,61 @@
+---
+- name: Install and register Wazuh agent on Debian 12
+  hosts: wazuh_agents
+  become: yes
+  vars:
+    wazuh_manager_ip: "192.168.1.49"
+    wazuh_agent_deb_url: "https://packages.wazuh.com/4.x/apt/"
+    wazuh_repo_key: "https://packages.wazuh.com/key/GPG-KEY-WAZUH"
+    wazuh_repo_file: "/etc/apt/sources.list.d/wazuh.list"
+    wazuh_agent_package: "wazuh-agent"
+
+  tasks:
+
+    - name: Add Wazuh APT repository key
+      apt_key:
+        url: "{{ wazuh_repo_key }}"
+        state: present
+
+    - name: Add Wazuh repository
+      apt_repository:
+        repo: "deb {{ wazuh_agent_deb_url }} stable main"
+        filename: "wazuh"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Wazuh agent
+      apt:
+        name: "{{ wazuh_agent_package }}"
+        state: present
+
+    - name: Configure Wazuh manager IP
+      lineinfile:
+        path: /var/ossec/etc/ossec.conf
+        regexp: '<address>.*</address>'
+        line: "    <address>{{ wazuh_manager_ip }}</address>"
+        insertafter: '<server>'
+        state: present
+        backup: yes
+
+    - name: Disable Wazuh agent automatic updates
+      blockinfile:
+        path: /var/ossec/etc/ossec.conf
+        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK: Disable auto-updates -->"
+        insertafter: '<ossec_config>'
+        block: |
+          <wazuh_modules>
+            <module>
+              <name>agent-updater</name>
+              <disabled>yes</disabled>
+            </module>
+          </wazuh_modules>
+
+    - name: Enable and start wazuh-agent service
+      systemd:
+        name: wazuh-agent
+        enabled: yes
+        state: restarted
