@@ -1,72 +1,61 @@
 ---
-- name: Install and register Wazuh Agent on Linux
+- name: Install & register Wazuh Agent on Debian-based Linux
   hosts: all
-  become: yes
+  become: true
+
+  vars:
+    wazuh_manager_ip: "192.168.1.49"
 
   tasks:
-    - name: Update apt cache
+    - name: Install apt prerequisites
       apt:
-        update_cache: yes
-
-    - name: Install required dependencies
-      apt:
-        name: 
+        name:
+          - apt-transport-https
+          - ca-certificates
           - curl
           - gnupg
-          - apt-transport-https
+          - lsb-release
         state: present
+        update_cache: yes
 
-    - name: Add the Wazuh GPG key
+    - name: Add Wazuh GPG key
       apt_key:
         url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
         state: present
 
-    - name: Add the Wazuh repository
+    - name: Add Wazuh APT repository
       apt_repository:
-        repo: "deb https://packages.wazuh.com/4.x/apt/ stable main"
-        state: present
+        repo: "deb [arch=amd64] https://packages.wazuh.com/4.x/apt/ stable main"
         filename: wazuh
+        state: present
+        update_cache: yes
 
-    - name: Install the Wazuh agent
+    - name: Install Wazuh Agent
       apt:
         name: wazuh-agent
         state: present
 
-    - name: Enable and start the Wazuh agent service
+    - name: Wait for wazuh.conf to exist
+      wait_for:
+        path: /var/ossec/etc/ossec.conf
+        timeout: 30
+
+    - name: Point agent at the manager IP
+      xml:
+        path: /var/ossec/etc/ossec.conf
+        xpath: /ossec_config/client/server-ip
+        value: "{{ wazuh_manager_ip }}"
+        state: present
+      notify: Restart wazuh-agent
+
+    - name: Ensure wazuh-agent is enabled & running
       systemd:
         name: wazuh-agent
         enabled: yes
         state: started
 
-    - name: Wait for wazuh-agent config file to be available
-      wait_for:
-        path: /var/ossec/etc/ossec.conf
-        timeout: 30
-
-    - name: Register agent with manager IP using XML module
-      xml:
-        path: /var/ossec/etc/ossec.conf
-        xpath: /ossec_config/client/server-ip
-        value: "192.168.1.49"
-        state: present
-      notify:
-        - Restart Wazuh Agent
-
   handlers:
-    - name: Restart Wazuh Agent
+    - name: Restart wazuh-agent
       systemd:
         name: wazuh-agent
         state: restarted
-
-    - name: Display the Wazuh agent service status
-      command: systemctl status wazuh-agent --no-pager
-      register: agent_status
-      changed_when: false
-      run_once: true
-      notify:
-        - Debug Wazuh Agent Status
-
-  handlers:
-    - name: Debug Wazuh Agent Status
-      debug:
-        msg: "{{ agent_status.stdout_lines }}"
