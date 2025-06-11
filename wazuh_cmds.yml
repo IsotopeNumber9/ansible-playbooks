@@ -7,6 +7,14 @@
     wazuh_manager_ip: "192.168.1.49"
 
   tasks:
+    - name: Ensure required packages are installed (curl and gpg)
+      apt:
+        name:
+          - curl
+          - gpg
+        state: present
+        update_cache: yes
+
     - name: Ensure directory for keyring exists
       file:
         path: /usr/share/keyrings
