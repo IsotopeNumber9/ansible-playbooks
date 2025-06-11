@@ -3,6 +3,9 @@
   hosts: all
   become: yes
 
+  vars:
+    wazuh_manager_ip: "192.168.1.49"
+
   tasks:
     - name: Ensure directory for keyring exists
       file:
@@ -37,12 +40,14 @@
         name: wazuh-agent
         state: present
 
-    - name: Ensure manager IP is set in ossec.conf
-      xml:
+    - name: Ensure <server> block is present in ossec.conf
+      blockinfile:
         path: /var/ossec/etc/ossec.conf
-        xpath: /ossec/client/server/address
-        value: 192.168.1.49
-        state: present
+        insertafter: '<client>'
+        block: |
+          <server>
+            <address>{{ wazuh_manager_ip }}</address>
+          </server>
       notify: Restart wazuh-agent
 
     - name: Enable wazuh-agent service
