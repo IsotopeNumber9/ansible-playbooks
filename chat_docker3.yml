@@ -1,6 +1,6 @@
 ---
 - name: Install Docker and Docker Compose on Debian 12 LXC
-  hosts: netalertx
+  hosts: all
   become: true
 
   vars:
